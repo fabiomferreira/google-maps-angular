@@ -42,26 +42,6 @@ export class AppComponent implements OnInit, AfterViewInit {
     { lat: -3.1367494032581673, lng: -59.982213377952576 }
   ];
   currentTravelTime = '';
-  contentString = '<div id="content">' +
-    '<div id="siteNotice">' +
-    '</div>' +
-    '<h1 id="firstHeading" class="firstHeading">Uluru</h1>' +
-    '<div id="bodyContent">' +
-    '<p><b>Uluru</b>, also referred to as <b>Ayers Rock</b>, is a large ' +
-    'sandstone rock formation in the southern part of the ' +
-    'Northern Territory, central Australia. It lies 335&#160;km (208&#160;mi) ' +
-    'south west of the nearest large town, Alice Springs; 450&#160;km ' +
-    '(280&#160;mi) by road. Kata Tjuta and Uluru are the two major ' +
-    'features of the Uluru - Kata Tjuta National Park. Uluru is ' +
-    'sacred to the Pitjantjatjara and Yankunytjatjara, the ' +
-    'Aboriginal people of the area. It has many springs, waterholes, ' +
-    'rock caves and ancient paintings. Uluru is listed as a World ' +
-    'Heritage Site.</p>' +
-    '<p>Attribution: Uluru, <a href="https://en.wikipedia.org/w/index.php?title=Uluru&oldid=297882194">' +
-    'https://en.wikipedia.org/w/index.php?title=Uluru</a> ' +
-    '(last visited June 22, 2009).</p>' +
-    '</div>' +
-    '</div>';
   @ViewChild('map') agmMap;
   gmaps: any;
 
@@ -74,7 +54,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   directionsService: any;
   directionsDisplay: any;
   constructor(private markerManager: MarkerManager ) {
-    
+
    }
   ngOnInit() {
   }
@@ -96,7 +76,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   onChooseLocation(event) {
     this.poi.latitude = event.coords.lat;
     this.poi.longitude = event.coords.lng;
-    console.log(this.poi);
+    // console.log(this.poi);
     this.escolheuPonto = true;
   }
 
@@ -129,7 +109,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   onLocationTypeSet(event) {
-    console.log('POI clicado');
+    // console.log('POI clicado');
   }
   salvaPOI() {
     // this.locations.push();
@@ -151,8 +131,8 @@ export class AppComponent implements OnInit, AfterViewInit {
 
       this.distanceService.getDistanceMatrix(
         {
-          origins: [origem],
-          destinations: destinos,
+          origins: destinos,
+          destinations: [origem],
           travelMode: 'DRIVING',
           drivingOptions: {
             departureTime: new Date(),
@@ -162,18 +142,19 @@ export class AppComponent implements OnInit, AfterViewInit {
           avoidHighways: false,
           avoidTolls: true,
         }, (response, status) => {
-          const travelTimes = response.rows[0].elements;
+          console.log(response);
+          const travelTimes = response.rows.map(row => row.elements[0]);
           let menor = travelTimes[0];
           travelTimes.forEach(element => {
             if (element.duration.value < menor.duration.value) {
               menor = element;
             }
           });
-          console.log(travelTimes);
+          // console.log(travelTimes);
           // JSON.stringify(menor)
           this.closestMarker = travelTimes.indexOf(menor);
           this.currentTravelTime = menor.duration_in_traffic.text;
-          console.log('Menor ' + this.closestMarker);
+          // console.log('Menor ' + this.closestMarker);
           this.directionsDisplay.setMap(this.gmaps);
           this.directionsDisplay.setOptions({markerOptions: {opacity: 0}});
           this.directionsService.route({
@@ -182,6 +163,7 @@ export class AppComponent implements OnInit, AfterViewInit {
             travelMode: 'DRIVING'
           }, (res, stat) => {
             if (stat === 'OK') {
+              // console.log(res);
               this.directionsDisplay.setDirections(res);
             } else {
               window.alert('Directions request failed due to ' + stat);
