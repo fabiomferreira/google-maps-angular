@@ -7,7 +7,7 @@
     </agm-info-window>
   </agm-marker>
 </agm-map>
-
+<p *ngIf="currentTravelTime != ''">{{currentTravelTime}} para a viatura {{closestMarker}} chegar ao local!</p>
 <!-- <form action="submit" *ngIf="gmaps">
   <label>Nome do POI:
     <input name="nome" type="text" [(ngModel)]="poi.nome"/>

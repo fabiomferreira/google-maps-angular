@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { MarkerManager, GoogleMapsAPIWrapper } from '@agm/core';
 import { Observable } from 'rxjs/Observable';
+import { COMPONENT_VARIABLE } from '@angular/platform-browser/src/dom/dom_renderer';
 
 declare var MarkerClusterer: any;
 declare var google: any;
@@ -13,31 +14,54 @@ export class AppComponent implements OnInit, AfterViewInit {
   title = 'app';
   lat = -3.071459623249695;
   lng = -59.98878479003906;
+  markers = [];
+  closestMarker = -1;
   locations = [
-    { lat: -3.0714596, lng: -59.988784 },
-    { lat: -3.0718234, lng: -59.983181 },
-    { lat: -3.0727111, lng: -59.981124 },
-    { lat: -3.0748588, lng: -59.989834 },
-    { lat: -3.0751702, lng: -59.986968 },
-    { lat: -3.0771264, lng: -59.983657 },
-    { lat: -3.0704724, lng: -59.982905 },
-    { lat: -3.0717685, lng: -59.989196 },
-    { lat: -3.0728611, lng: -59.980222 },
-    { lat: -3.0750000, lng: -59.986667 },
-    { lat: -3.0759859, lng: -59.988708 },
-    { lat: -3.0765015, lng: -59.983858 },
-    { lat: -3.0770104, lng: -59.983299 },
-    { lat: -3.0773700, lng: -59.985187 },
-    { lat: -3.0774785, lng: -59.987978 },
-    { lat: -3.0719616, lng: -59.988119 },
-    { lat: -3.0730766, lng: -59.985692 },
-    { lat: -3.0727193, lng: -59.983218 },
-    { lat: -3.0730162, lng: -59.985694 },
-    { lat: -3.0734358, lng: -59.989506 },
-    { lat: -3.0734358, lng: -59.981315 },
-    { lat: -3.0735258, lng: -59.988000 },
-    { lat: -3.0799792, lng: -59.983352 }
+    { lat: -3.11058198408478, lng: -60.04921495914459 },
+    { lat: -3.133670839702164, lng: -59.98654246330261 },
+    { lat: -3.0750233373287403, lng: -60.087629556655884 },
+    { lat: -3.071612624324068, lng: -59.95696306228638 },
+    { lat: -3.070782333766531, lng: -59.955992102622986 },
+    { lat: -3.0903234522395753, lng: -59.98088300228119 },
+    { lat: -3.0904135940568063, lng: -59.978910237550735 },
+    { lat: -3.031081474989356, lng: -60.04731863737106 },
+    { lat: -3.028855675269179, lng: -60.03852367401123 },
+    { lat: -3.035366829649787, lng: -59.995479583740234 },
+    { lat: -3.0322812554756644, lng: -59.98530864715576 },
+    { lat: -3.1300565838603145, lng: -60.022913217544556 },
+    { lat: -3.137769793330287, lng: -60.023087561130524 },
+    { lat: -3.1217674985827717, lng: -60.01363813877106 },
+    { lat: -3.1263514444868883, lng: -60.00761926174164 },
+    { lat: -3.0819393928224534, lng: -60.01960337162018 },
+    { lat: -3.011298214112902, lng: -60.01638740301132 },
+    { lat: -3.073823437181925, lng: -60.03474712371826 },
+    { lat: -3.14115501729921, lng: -60.00776678323746 },
+    { lat: -3.1441331482978168, lng: -60.01152187585831 },
+    { lat: -3.0843030161113707, lng: -60.00212475657463 },
+    { lat: -3.133977472445454, lng: -59.99579340219498 },
+    { lat: -3.1367494032581673, lng: -59.982213377952576 }
   ];
+  currentTravelTime = '';
+  contentString = '<div id="content">' +
+    '<div id="siteNotice">' +
+    '</div>' +
+    '<h1 id="firstHeading" class="firstHeading">Uluru</h1>' +
+    '<div id="bodyContent">' +
+    '<p><b>Uluru</b>, also referred to as <b>Ayers Rock</b>, is a large ' +
+    'sandstone rock formation in the southern part of the ' +
+    'Northern Territory, central Australia. It lies 335&#160;km (208&#160;mi) ' +
+    'south west of the nearest large town, Alice Springs; 450&#160;km ' +
+    '(280&#160;mi) by road. Kata Tjuta and Uluru are the two major ' +
+    'features of the Uluru - Kata Tjuta National Park. Uluru is ' +
+    'sacred to the Pitjantjatjara and Yankunytjatjara, the ' +
+    'Aboriginal people of the area. It has many springs, waterholes, ' +
+    'rock caves and ancient paintings. Uluru is listed as a World ' +
+    'Heritage Site.</p>' +
+    '<p>Attribution: Uluru, <a href="https://en.wikipedia.org/w/index.php?title=Uluru&oldid=297882194">' +
+    'https://en.wikipedia.org/w/index.php?title=Uluru</a> ' +
+    '(last visited June 22, 2009).</p>' +
+    '</div>' +
+    '</div>';
   @ViewChild('map') agmMap;
   gmaps: any;
 
@@ -46,13 +70,16 @@ export class AppComponent implements OnInit, AfterViewInit {
   pois = [];
   poi = { nome: '', latitude: 0, longitude: 0 };
   markerCluster: any;
-  constructor(private markerManager: MarkerManager) { }
+  distanceService: any;
+  directionsService: any;
+  directionsDisplay: any;
+  constructor(private markerManager: MarkerManager ) {
+    
+   }
   ngOnInit() {
   }
   ngAfterViewInit() {
     setTimeout(this.initMaps.bind(this), 0);
-
-
   }
 
   async initMaps() {
@@ -69,20 +96,34 @@ export class AppComponent implements OnInit, AfterViewInit {
   onChooseLocation(event) {
     this.poi.latitude = event.coords.lat;
     this.poi.longitude = event.coords.lng;
+    console.log(this.poi);
     this.escolheuPonto = true;
   }
 
   onMapReady() {
-    const labels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const markers = this.locations.map(function (location) {
-      return new google.maps.Marker({
+    this.distanceService = new google.maps.DistanceMatrixService();
+    this.directionsService = new google.maps.DirectionsService;
+    this.directionsDisplay = new google.maps.DirectionsRenderer;
+    this.markers = this.locations.map(function (location) {
+      const marker = new google.maps.Marker({
         position: location,
-        icon: '../assets/placeholder.png'
+        icon: '../assets/police-car.png',
       });
-    });
+      const infowindow = new google.maps.InfoWindow({
+        content: '<p>Viatura ' + this.locations.indexOf(location) + '</p>'
+      });
+      marker.addListener('click', function () {
+        infowindow.open(this.gmaps, marker);
+      });
+
+      this.gmaps.addListener('click', function () {
+        infowindow.close();
+      });
+      return marker;
+    }.bind(this));
 
     // Add a marker clusterer to manage the markers.
-    this.markerCluster = new MarkerClusterer(this.gmaps, markers,
+    this.markerCluster = new MarkerClusterer(this.gmaps, this.markers,
       { imagePath: '../assets/m' });
 
   }
@@ -93,14 +134,73 @@ export class AppComponent implements OnInit, AfterViewInit {
   salvaPOI() {
     // this.locations.push();
     // this.onMapReady();
-    this.markerCluster.addMarker(new google.maps.Marker({
+    const marker = new google.maps.Marker({
       position: { lat: this.poi.latitude, lng: this.poi.longitude },
       icon: '../assets/placeholder.png'
-    }), true);
+    });
+
+    marker.addListener('click', function () {
+      const origem = marker.getPosition().toJSON();
+      // const destinos = this.markers.map(mark => {
+      //   return mark.getPosition().toJSON();
+      // });
+
+      const destinos = this.locations.map(loc => {
+        return loc;
+      });
+
+      this.distanceService.getDistanceMatrix(
+        {
+          origins: [origem],
+          destinations: destinos,
+          travelMode: 'DRIVING',
+          drivingOptions: {
+            departureTime: new Date(),
+            // trafficModel: 'pessimistic'
+          },
+          // unitSystem: UnitSystem,
+          avoidHighways: false,
+          avoidTolls: true,
+        }, (response, status) => {
+          const travelTimes = response.rows[0].elements;
+          let menor = travelTimes[0];
+          travelTimes.forEach(element => {
+            if (element.duration.value < menor.duration.value) {
+              menor = element;
+            }
+          });
+          console.log(travelTimes);
+          // JSON.stringify(menor)
+          this.closestMarker = travelTimes.indexOf(menor);
+          this.currentTravelTime = menor.duration_in_traffic.text;
+          console.log('Menor ' + this.closestMarker);
+          this.directionsDisplay.setMap(this.gmaps);
+          this.directionsDisplay.setOptions({markerOptions: {opacity: 0}});
+          this.directionsService.route({
+            origin: this.locations[this.closestMarker],
+            destination: origem,
+            travelMode: 'DRIVING'
+          }, (res, stat) => {
+            if (stat === 'OK') {
+              this.directionsDisplay.setDirections(res);
+            } else {
+              window.alert('Directions request failed due to ' + stat);
+            }
+          });
+        });
+        const infowindow = new google.maps.InfoWindow({
+          content: '<p>Marcador</p>'
+        });
+        this.gmaps.addListener('click', function () {
+          infowindow.close();
+        });
+      infowindow.open(this.gmaps, marker);
+    }.bind(this));
+
+    this.markers.push(marker);
+    this.markerCluster.addMarker(marker, true);
 
     this.markerCluster.redraw();
     this.poi = { nome: '', latitude: 0, longitude: 0 };
-    // alert('POI Salvo');
-
   }
 }
